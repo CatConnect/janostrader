@@ -1,36 +1,57 @@
 ---
 services:
-  freqtrade:
-    image: freqtradeorg/freqtrade:stable
-    # image: freqtradeorg/freqtrade:develop
-    # Use plotting image
-    # image: freqtradeorg/freqtrade:develop_plot
-    # # Enable GPU Image and GPU Resources (only relevant for freqAI)
-    # # Make sure to uncomment the whole deploy section
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-    # Build step - only needed when additional dependencies are needed
-    # build:
-    #   context: .
-    #   dockerfile: "./docker/Dockerfile.custom"
+
+  hub:
+    build:
+      context: ./hub
+      dockerfile: Dockerfile
+    image: janostrader-hub:latest
+    container_name: janostrader-hub
     restart: unless-stopped
-    container_name: freqtrade
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - ACCESS_KEY=${ACCESS_KEY}
+      - STRATEGIES_VOLUME_PATH=/strategies
+      - STRATEGIES_SEED_PATH=/app/strategies
     volumes:
-      - "./user_data:/freqtrade/user_data"
-    # Expose api on port 8080 (localhost only)
-    # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
-    # for more information.
+      - strategies_vol:/strategies
+      - ./strategies:/app/strategies:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  freqtrade:
+    build:
+      context: ./freqtrade
+      dockerfile: Dockerfile
+    image: janostrader-bot:latest
+    container_name: freqtrade-supertrend
+    restart: unless-stopped
+    depends_on:
+      - hub
+    environment:
+      - HUB_URL=http://hub:3000
+      - BOT_NAME=supertrend
+    volumes:
+      - strategies_vol:/freqtrade/user_data/strategies:ro
+      - freqtrade_logs:/freqtrade/user_data/logs
+      - freqtrade_data:/freqtrade/user_data/data
+      - freqtrade_cache:/freqtrade/user_data
     ports:
       - "127.0.0.1:8080:8080"
-    # Default command used when running `docker compose up`
-    command: >
-      trade
-      --logfile /freqtrade/user_data/logs/freqtrade.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
-      --config /freqtrade/user_data/config.json
-      --strategy SampleStrategy
+    command:
+      - trade
+      - --logfile
+      - /freqtrade/user_data/logs/freqtrade.log
+      - --config
+      - /freqtrade/config.json
+      - --strategy
+      - FSupertrendStrategy
+      - --strategy-path
+      - /freqtrade/user_data/strategies
+
+volumes:
+  strategies_vol:
+  freqtrade_logs:
+  freqtrade_data:
+  freqtrade_cache:

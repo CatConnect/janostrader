@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>janostrader</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+    --text: #e2e8f0; --muted: #64748b; --green: #22c55e;
+    --red: #ef4444; --blue: #3b82f6; --yellow: #f59e0b;
+    --radius: 8px; --font: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+  .live-badge { font-size: 11px; color: var(--green); background: rgba(34,197,94,.1);
+    border: 1px solid rgba(34,197,94,.3); border-radius: 4px; padding: 2px 7px;
+    margin-left: 6px; display: none; }
+  .live-badge.visible { display: inline-block; }
+  .last-update { font-size: 11px; color: var(--muted); margin-left: 4px; }
+  .key-bar { display: flex; gap: 8px; margin-left: auto; }
+  .key-bar input { background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 10px; border-radius: var(--radius); font-size: 13px; width: 260px; }
+  .key-bar button { background: var(--blue); color: #fff; border: none; padding: 6px 14px;
+    border-radius: var(--radius); cursor: pointer; font-size: 13px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+  /* Cards de resumo */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .card .value { font-size: 24px; font-weight: 700; }
+  .card .value.green { color: var(--green); }
+  .card .value.red { color: var(--red); }
+
+  /* Seções */
+  section h2 { font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .05em; margin-bottom: 12px; }
+
+  /* Tabelas */
+  table { width: 100%; border-collapse: collapse; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  th { text-align: left; padding: 10px 14px; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge.active   { background: rgba(34,197,94,.15);  color: var(--green); }
+  .badge.stopped  { background: rgba(100,116,139,.15); color: var(--muted); }
+  .badge.candidate{ background: rgba(245,158,11,.15); color: var(--yellow); }
+  .badge.running  { background: rgba(34,197,94,.15);  color: var(--green); }
+  .badge.error    { background: rgba(239,68,68,.15);  color: var(--red); }
+  .pos  { color: var(--green); }
+  .neg  { color: var(--red); }
+  .empty { color: var(--muted); font-style: italic; text-align: center; padding: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="dot"></div>
+  <h1>janostrader</h1>
+  <span class="live-badge" id="live-badge">● AO VIVO</span>
+  <span class="last-update" id="last-update"></span>
+  <div class="key-bar">
+    <input id="apiKey" type="password" placeholder="access key" />
+    <button onclick="startLive()">Carregar</button>
+  </div>
+</header>
+<main>
+  <div class="summary" id="summary">
+    <div class="card"><div class="label">P&L Total</div><div class="value" id="pnl-total">—</div></div>
+    <div class="card"><div class="label">Bots ativos</div><div class="value" id="bots-count">—</div></div>
+    <div class="card"><div class="label">Trades abertos</div><div class="value" id="open-count">—</div></div>
+    <div class="card"><div class="label">Win rate médio</div><div class="value" id="winrate">—</div></div>
+  </div>
+
+  <section>
+    <h2>Performance por bot</h2>
+    <table>
+      <thead><tr>
+        <th>Bot</th><th>Trades</th><th>Win rate</th>
+        <th>P&L (USDT)</th><th>Avg profit</th>
+      </tr></thead>
+      <tbody id="perf-rows"><tr><td colspan="5" class="empty">Informe a access key e clique em Carregar</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Posições abertas</h2>
+    <table>
+      <thead><tr>
+        <th>Bot</th><th>Par</th><th>Direção</th>
+        <th>Entrada</th><th>Stake</th><th>Alavancagem</th><th>Abertura</th>
+      </tr></thead>
+      <tbody id="open-rows"><tr><td colspan="7" class="empty">—</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Trades recentes</h2>
+    <table>
+      <thead><tr>
+        <th>Bot</th><th>Par</th><th>Direção</th>
+        <th>P&L %</th><th>P&L USDT</th><th>Saída</th><th>Fechamento</th>
+      </tr></thead>
+      <tbody id="trade-rows"><tr><td colspan="7" class="empty">—</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Estratégias</h2>
+    <table>
+      <thead><tr><th>Nome</th><th>Status</th><th>Versão</th><th>Atualizado</th></tr></thead>
+      <tbody id="strat-rows"><tr><td colspan="4" class="empty">—</td></tr></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+const key = () => document.getElementById('apiKey').value;
+const headers = () => ({ 'x-api-key': key(), 'Content-Type': 'application/json' });
+const fmt = (n, dec=2) => n == null ? '—' : Number(n).toFixed(dec);
+const fmtDate = d => d ? new Date(d).toLocaleString('pt-BR', {dateStyle:'short',timeStyle:'short'}) : '—';
+const pct = n => n == null ? '—' : Number(n).toFixed(1) + '%';
+const cls = n => n > 0 ? 'pos' : n < 0 ? 'neg' : '';
+
+async function api(path) {
+  const r = await fetch(path, { headers: headers() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function load() {
+  try {
+    const [perf, open, trades, strats] = await Promise.all([
+      api('/api/trades/performance'),
+      api('/api/trades/open'),
+      api('/api/trades?limit=50&is_open=false'),
+      api('/api/strategies'),
+    ]);
+
+    // Summary
+    const totalPnl = perf.reduce((s, b) => s + (b.total_profit_usdt || 0), 0);
+    const activeBots = perf.filter(b => b.total_trades > 0).length;
+    const avgWr = perf.length
+      ? perf.reduce((s, b) => s + (b.win_rate_pct || 0), 0) / perf.length
+      : 0;
+
+    document.getElementById('pnl-total').textContent = (totalPnl >= 0 ? '+' : '') + fmt(totalPnl) + ' USDT';
+    document.getElementById('pnl-total').className = 'value ' + (totalPnl >= 0 ? 'green' : 'red');
+    document.getElementById('bots-count').textContent = activeBots;
+    document.getElementById('open-count').textContent = open.length;
+    document.getElementById('winrate').textContent = pct(avgWr);
+
+    // Performance
+    document.getElementById('perf-rows').innerHTML = perf.length
+      ? perf.map(b => `<tr>
+          <td>${b.strategy}</td>
+          <td>${b.total_trades}</td>
+          <td>${pct(b.win_rate_pct)}</td>
+          <td class="${cls(b.total_profit_usdt)}">${fmt(b.total_profit_usdt)}</td>
+          <td class="${cls(b.avg_profit_ratio)}">${pct((b.avg_profit_ratio||0)*100)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" class="empty">Sem dados ainda</td></tr>';
+
+    // Open trades
+    document.getElementById('open-rows').innerHTML = open.length
+      ? open.map(t => `<tr>
+          <td>${t.strategy}</td>
+          <td>${t.pair}</td>
+          <td>${t.is_short ? '⬇ Short' : '⬆ Long'}</td>
+          <td>${fmt(t.open_rate, 4)}</td>
+          <td>${fmt(t.stake_amount)}</td>
+          <td>${t.leverage}x</td>
+          <td>${fmtDate(t.open_date)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" class="empty">Nenhuma posição aberta</td></tr>';
+
+    // Closed trades
+    document.getElementById('trade-rows').innerHTML = trades.length
+      ? trades.map(t => `<tr>
+          <td>${t.strategy}</td>
+          <td>${t.pair}</td>
+          <td>${t.is_short ? '⬇ Short' : '⬆ Long'}</td>
+          <td class="${cls(t.close_profit)}">${pct((t.close_profit||0)*100)}</td>
+          <td class="${cls(t.close_profit_abs)}">${fmt(t.close_profit_abs)}</td>
+          <td>${t.exit_reason || '—'}</td>
+          <td>${fmtDate(t.close_date)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" class="empty">Sem trades fechados</td></tr>';
+
+    // Strategies
+    document.getElementById('strat-rows').innerHTML = strats.length
+      ? strats.map(s => `<tr>
+          <td>${s.name}</td>
+          <td><span class="badge ${s.status}">${s.status}</span></td>
+          <td>v${s.version}</td>
+          <td>${fmtDate(s.updated_at)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" class="empty">Nenhuma estratégia cadastrada</td></tr>';
+
+    updateLastUpdate();
+  } catch (e) {
+    console.error('Erro ao carregar dados:', e);
+  }
+}
+
+let _pollTimer = null;
+const POLL_INTERVAL = 30_000; // 30s
+
+function startLive() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) return;
+  localStorage.setItem('janos_key', key);
+
+  // Cancela poll anterior se existir
+  if (_pollTimer) clearInterval(_pollTimer);
+
+  load();
+  _pollTimer = setInterval(load, POLL_INTERVAL);
+
+  document.getElementById('live-badge').classList.add('visible');
+}
+
+function updateLastUpdate() {
+  const el = document.getElementById('last-update');
+  const now = new Date();
+  el.textContent = `atualizado às ${now.toLocaleTimeString('pt-BR')}`;
+}
+
+// Auto-load se tiver key salva
+const saved = localStorage.getItem('janos_key');
+if (saved) { document.getElementById('apiKey').value = saved; startLive(); }
+document.getElementById('apiKey').addEventListener('change', e => localStorage.setItem('janos_key', e.target.value));
+</script>
+</body>
+</html>

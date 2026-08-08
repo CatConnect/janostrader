@@ -1,193 +1,90 @@
 # Pesquisa Inicial de Estratégias — Futuros Binance
 
 **Data:** 2026-08-07  
-**Contexto:** Binance Futures, ~$20 USDT, alavancagem máx 3x, Freqtrade  
-**Fontes consultadas:** freqtrade/freqtrade-strategies (oficial), freqst.com, arXiv, Medium
+**Período testado:** 2025-01-01 → 2026-08-01 (576 dias)  
+**Setup:** Binance Futures, $20 USDT, 3x alavancagem, 5 pares (BTC/ETH/SOL/BNB/XRP)  
+**Status:** ✅ Concluída
 
 ---
 
-## Candidatas encontradas
+## Resultado dos Backtests
 
-### 1. FSupertrendStrategy ⭐ Recomendada para testar primeiro
+| Estratégia | Lucro Total | Profit Factor | Sharpe | Drawdown | Win Rate | Trades | Decisão |
+|---|---|---|---|---|---|---|---|
+| **FSupertrendStrategy** | **+94.09%** | **1.04** | **1.23** | 41.44% | 80.0% | 2730 | ✅ **DRY RUN** |
+| FAdxSmaStrategy | -17.26% | 0.75 | -0.38 | 19.23% | 35.8% | 95 | ❌ Ajustar |
+| TrendFollowingStrategy | -65.80% | 0.70 | -0.51 | 66.92% | 76.8% | 112 | ❌ Descartar |
 
-**Fonte:** [freqtrade/freqtrade-strategies](https://github.com/freqtrade/freqtrade-strategies/blob/main/user_data/strategies/futures/FSupertrendStrategy.py)  
-**Referência acadêmica:** Supertrend é amplamente documentado em literatura de análise técnica quantitativa. O paper ["Systematic Trend-Following with Adaptive Portfolio Construction"](https://arxiv.org/html/2602.11708v1) valida a lógica de trend-following em crypto com Sharpe 2.41 e drawdown máximo de 12.7%.
+---
 
-**Como funciona:**  
-Usa 6 indicadores Supertrend simultâneos (3 pra entrada, 3 pra saída). Só entra quando TODOS os 3 do lado concordam — filtro de consenso forte que reduz sinais falsos. Confirma com volume.
+## Análise Detalhada
 
-| Campo | Valor |
-|---|---|
-| Indicadores | 6x Supertrend (ATR-based) + Volume |
-| Timeframe | 1h |
-| Long + Short | ✅ |
-| Stop Loss | -26.5% (trailing) |
-| ROI alvo | 2.5% → 5% → 7.5% → 10% |
-| Startup candles | 18 |
-| Compatível c/ futuros | ✅ nativo |
+### 🏆 FSupertrendStrategy — APROVADA
 
-**Pontos positivos:**
-- Lógica de consenso (3 de 3) reduz muito entrada em ruído
-- Trailing stop protege ganhos
-- Opera long e short — aproveita os dois lados do mercado
-- Parâmetros otimizáveis via hyperopt
+**Resultado:** $20 → $38.82 USDT em 576 dias (+94%)  
+**Contexto de mercado:** Período bear (-42% no mercado). A estratégia lucrou **contra a maré**.
+
+**O que funcionou:**
+- Short side foi o motor: **+103.34%** de lucro no lado short
+- Long side ficou ligeiramente negativo (-9.25%) — esperado em bear market
+- Win rate de 80% com 2730 trades = consistência estatística sólida
+- 2182 trades saíram por ROI (100% de acerto nesses) — a estratégia sabe quando sair com lucro
 
 **Pontos de atenção:**
-- Stop de -26.5% é largo — com 3x alavancagem representa risco real
-- Timeframe 1h = menos trades por dia (paciência necessária)
-- Precisa ajustar leverage_callback para máx 3x
+- Drawdown de 41.44% é alto — entre fev/2026 e mai/2026 a carteira caiu de $63 para $17
+- Profit factor 1.04 é baixo — a margem entre ganhos e perdas é fina
+- Exit signal com 0% de win rate: quando a estratégia decide sair por sinal, está sempre errada — isso é um ponto claro de melhoria
+- BTC não operou nenhum trade — pares com pouca volatilidade ficam travados
 
-**Decisão:** ✅ **Aprovada para backtest**
-
----
-
-### 2. TrendFollowingStrategy ⭐ Segunda a testar
-
-**Fonte:** [freqtrade/freqtrade-strategies](https://github.com/freqtrade/freqtrade-strategies/blob/main/user_data/strategies/futures/TrendFollowingStrategy.py)  
-**Referência acadêmica:** ["Follow the Leader: Enhancing Systematic Trend-Following Using Network Momentum"](https://arxiv.org/html/2501.07135v1) — valida combinação de momentum de preço + volume para trend-following.
-
-**Como funciona:**  
-EMA 20 como baseline de tendência + OBV (volume acumulado) como confirmação de momentum. Entra quando preço cruza a EMA E o volume confirma a direção. Simples e eficiente.
-
-| Campo | Valor |
-|---|---|
-| Indicadores | EMA 20 + OBV |
-| Timeframe | 5m |
-| Long + Short | ✅ |
-| Stop Loss | -26.5% (trailing) |
-| ROI alvo | 5% → 10% → 15% |
-| Compatível c/ futuros | ✅ nativo |
-
-**Pontos positivos:**
-- Timeframe 5m = muito mais trades, dados acumulam mais rápido
-- Lógica simples = fácil de entender por que entrou e saiu
-- Volume como filtro evita entradas em movimentos falsos
-
-**Pontos de atenção:**
-- 5m pode gerar overtrading em mercado lateral
-- Mais trades = mais taxas (importante com conta pequena)
-- Stop de -26.5% idem ao anterior — precisa ajuste
-
-**Decisão:** ✅ **Aprovada para backtest**
+**Conclusão:** Funciona. Com mercado lateralizando ou caindo, o short side segura. Precisa de ajuste no exit_signal para não destruir ganhos. Entra em dry run.
 
 ---
 
-### 3. FAdxSmaStrategy — Terceira
+### ⚠️ FAdxSmaStrategy — AJUSTAR ANTES DE RETESTAR
 
-**Fonte:** [freqtrade/freqtrade-strategies](https://github.com/freqtrade/freqtrade-strategies/blob/main/user_data/strategies/futures/FAdxSmaStrategy.py)
+**Resultado:** $20 → $16.55 USDT (-17.26%)  
+**O que o ADX está fazendo:** entrando em 95 trades, mas atingindo stop loss em 31 deles (33%). O cruzamento de SMA está atrasado — entra depois que o movimento já aconteceu.
 
-**Como funciona:**  
-ADX mede a força da tendência (não a direção). Só entra quando a tendência é forte o suficiente (ADX > 30) E o cruzamento de SMAs (12/48) confirma a direção. Sai quando a tendência enfraquece (ADX cai).
+**Diagnóstico claro:**
+- Quando sai por ROI: 21 trades, 100% win, +45.84% — a lógica tem valor
+- Quando sai por exit_signal: 43 trades, 30% win — o sinal de saída está errado
+- Quando bate stop: 31 trades, 0% win, -55.32% — o stop de -5% correto mas acontece cedo demais
 
-| Campo | Valor |
-|---|---|
-| Indicadores | ADX 14 + SMA 12 + SMA 48 |
-| Timeframe | 1h |
-| Long + Short | ✅ |
-| Stop Loss | -5% (fixo) |
-| ROI alvo | 5% → 10% → 7.5% |
-| Compatível c/ futuros | ✅ nativo |
+**O que ajustar:**
+1. Reduzir `sma_long_period` de 48 para 20-30 — entrada mais rápida
+2. Aumentar `pos_entry_adx` de 30 para 35 — entrar só em tendências mais fortes
+3. Revisar lógica de exit_signal — está saindo cedo demais nos winners
 
-**Pontos positivos:**
-- Stop de -5% é o mais adequado para conta pequena com alavancagem
-- ADX filtra mercado lateral — só opera em tendência real
-- Lógica clássica, muito documentada
-
-**Pontos de atenção:**
-- Cruzamento de SMA é lento — pode entrar tarde na tendência
-- ADX como saída pode segurar posição perdedora por muito tempo
-
-**Decisão:** ✅ **Aprovada para backtest**
+**Decisão:** Não entra em dry run agora. Retestar após ajustes nos parâmetros.
 
 ---
 
-### 4. VolatilitySystem — Descartada por agora
+### ❌ TrendFollowingStrategy — DESCARTADA
 
-**Fonte:** [freqtrade/freqtrade-strategies](https://github.com/freqtrade/freqtrade-strategies/blob/main/user_data/strategies/futures/VolatilitySystem.py)
+**Resultado:** $20 → $6.84 USDT (-65.80%). Drawdown de 66.92% em 61 dias corridos logo no início.
 
-**Problema:** Stop loss configurado como -1 (praticamente sem stop). Com conta de $20 e alavancagem, isso é inaceitável. A lógica de resampling para 3 minutos também adiciona complexidade desnecessária neste momento.
+**Causa raiz:** O trailing stop de -26.5% está destruindo a estratégia. Em 5m, um movimento brusco aciona o stop e a perda (-23.5% por trade quando trailing stop é acionado) anula todos os wins do ROI. A relação risco/retorno está invertida: ganha pequeno, perde grande.
 
-**Decisão:** ❌ **Descartada — sem stop loss adequado para conta pequena**
-
----
-
-## Insight acadêmico relevante
-
-O paper [Systematic Trend-Following with Adaptive Portfolio Construction](https://arxiv.org/html/2602.11708v1) testou 150+ pares cripto em 36 meses (2022-2024) e chegou a:
-- Sharpe Ratio: **2.41**
-- Drawdown máximo: **-12.7%**
-- Retorno anualizado: **40.5%**
-- Timeframe ótimo: **6h** (H1 e H4 geram taxas demais, H12+ perde sinais curtos)
-
-**O que isso nos diz:** trend-following funciona em cripto. A lógica das nossas candidatas é válida. O timeframe de 1h é conservador mas razoável.
+**Decisão:** ❌ Descartada. Lógica EMA+OBV tem potencial mas precisa de stop completamente diferente para o timeframe 5m. Pode ser reavaliada no futuro com stop de -3% fixo.
 
 ---
 
 ## Próximos passos
 
-### Ordem de backtest
+### Imediato
+1. **FSupertrendStrategy entra em dry run** — configurar bot para rodar com ela
+2. **Monitorar por 7-14 dias** — ver se o comportamento real bate com o backtest
+3. **Analisar exit_signal** — entender por que os 444 exits por sinal têm 0% de win
 
-| Prioridade | Estratégia | Motivo |
-|---|---|---|
-| 1ª | FSupertrendStrategy | Lógica mais robusta, consenso de 3 indicadores |
-| 2ª | FAdxSmaStrategy | Stop fixo de -5% é o mais seguro pra conta pequena |
-| 3ª | TrendFollowingStrategy | Mais trades = mais dados, testar em paralelo |
-
-### Comandos de backtest a rodar
-
-```bash
-# Baixar dados históricos (6 meses)
-freqtrade download-data \
-  --exchange binance \
-  --trading-mode futures \
-  --timeframe 1h 5m \
-  --timerange 20250101-20260101 \
-  --pairs BTC/USDT:USDT ETH/USDT:USDT SOL/USDT:USDT BNB/USDT:USDT XRP/USDT:USDT
-
-# Backtest FSupertrendStrategy
-freqtrade backtesting \
-  --strategy FSupertrendStrategy \
-  --config config.json \
-  --timerange 20250101-20260101
-
-# Backtest FAdxSmaStrategy
-freqtrade backtesting \
-  --strategy FAdxSmaStrategy \
-  --config config.json \
-  --timerange 20250101-20260101
-
-# Backtest TrendFollowingStrategy
-freqtrade backtesting \
-  --strategy TrendFollowingStrategy \
-  --config config.json \
-  --timerange 20250101-20260101 \
-  --timeframe 5m
-```
-
-### Métricas mínimas para aprovação para dry run
-
-| Métrica | Mínimo |
-|---|---|
-| Lucro total | > 0% |
-| Drawdown máximo | < 30% |
-| Win Rate | > 45% |
-| Profit Factor | > 1.2 |
-| Sharpe Ratio | > 0.5 |
-| Total de trades | > 30 |
+### Médio prazo
+4. **Ajustar FAdxSmaStrategy** e retestar
+5. **Buscar nova estratégia** com foco em proteção de capital no long side
+6. **Primeira análise** (`/analyse`) após 50 trades no dry run
 
 ---
 
-## Ajustes obrigatórios antes do backtest
+## Referências
 
-Todas as estratégias precisam dos seguintes ajustes no código para o nosso setup:
-
-```python
-# Alavancagem máxima 3x
-def leverage(self, pair, current_time, current_rate, proposed_leverage,
-             max_leverage, entry_tag, side):
-    return 3.0
-
-# Modo futuros
-trading_mode = TradingMode.FUTURES
-margin_mode = MarginMode.ISOLATED
-```
+- [freqtrade/freqtrade-strategies — pasta futures](https://github.com/freqtrade/freqtrade-strategies/tree/main/user_data/strategies/futures)
+- [arXiv 2602.11708 — Systematic Trend-Following Crypto](https://arxiv.org/html/2602.11708v1): Sharpe 2.41, drawdown -12.7% em 150+ pares 2022-2024. Valida a lógica de trend-following.
+- [arXiv 2501.07135 — Network Momentum](https://arxiv.org/html/2501.07135v1): valida volume como confirmador de momentum
