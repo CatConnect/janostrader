@@ -18,7 +18,7 @@ services:
       - strategies_vol:/strategies
       - ./strategies:/app/strategies:ro
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3001:3000"
 
   freqtrade:
     build:
@@ -38,7 +38,7 @@ services:
       - freqtrade_data:/freqtrade/user_data/data
       - freqtrade_cache:/freqtrade/user_data
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8080:8080"
     command:
       - trade
       - --logfile
