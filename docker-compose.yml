@@ -17,7 +17,8 @@ services:
     volumes:
       - strategies_vol:/strategies
       - ./strategies:/app/strategies:ro
-    # Sem exposição externa — freqtrade acessa via rede interna Docker
+    ports:
+      - "8080:3000"   # dashboard do hub em :8080
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/internal/health"]
       interval: 10s
@@ -43,8 +44,7 @@ services:
       - freqtrade_logs:/freqtrade/user_data/logs
       - freqtrade_data:/freqtrade/user_data/data
       - freqtrade_cache:/freqtrade/user_data
-    ports:
-      - "8080:8080"
+    # sem porta externa — hub é o ponto de acesso
     command:
       - trade
       - --logfile

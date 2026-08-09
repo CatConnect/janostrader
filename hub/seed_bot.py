@@ -52,12 +52,7 @@ config = {
             "protection_trigger": "on", "protection_trigger_global": "on"
         }
     },
-    "api_server": {
-        "enabled": True, "listen_ip_address": "0.0.0.0", "listen_port": 8080,
-        "verbosity": "error",
-        "jwt_secret_key": "janostrader2026secretkey_xK9mP3qL7nR2vT8wA5cE1hJ4bN6yU0s",
-        "CORS_origins": [], "username": "janostrader", "password": "janos2026"
-    },
+    "api_server": {"enabled": False},
     "db_url": os.environ["DATABASE_URL"],
     "bot_name": BOT_NAME,
     "initial_state": "running",
