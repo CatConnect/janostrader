@@ -27,12 +27,14 @@ BOT_CONFIGS = {
     "supertrend": {
         "strategy_name": "FSupertrendStrategy",
         "container_name": "freqtrade-supertrend",
+        "timeframe": "1h",
         "telegram_enabled": True,
         "api_server_port": 8080,
     },
     "dualmacd": {
         "strategy_name": "FDualMacdStrategy",
         "container_name": "freqtrade-dualmacd",
+        "timeframe": "1h",
         "telegram_enabled": False,
         "api_server_port": 8081,
     },
@@ -142,6 +144,7 @@ def main():
                 name=bot_name,
                 strategy_name=strategy_name,
                 container_name=meta["container_name"],
+                timeframe=meta["timeframe"],
                 dry_run=dry_run,
             ))
             print(f"✅ Bot '{bot_name}' registrado (dry_run={dry_run})")

@@ -77,7 +77,10 @@ def get_performance(strategy: Optional[str] = Query(None)):
             ROUND(
                 100.0 * SUM(CASE WHEN close_profit > 0 THEN 1 ELSE 0 END)
                 / NULLIF(COUNT(*), 0), 1
-            )                                                     AS win_rate_pct
+            )                                                     AS win_rate_pct,
+            ROUND(
+                AVG(EXTRACT(EPOCH FROM (close_date - open_date)) / 3600.0)::numeric, 2
+            )                                                     AS avg_duration_hours
         FROM trades
         WHERE is_open = false {extra_filter}
         GROUP BY strategy

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 
 from services.db import get_db, Bot
 from auth import require_key
@@ -15,7 +15,9 @@ def list_bots():
                 "name": b.name,
                 "strategy": b.strategy_name,
                 "dry_run": b.dry_run,
+                "timeframe": b.timeframe or "1h",
                 "container": b.container_name,
+                "last_seen": b.last_seen.isoformat() if b.last_seen else None,
                 "created_at": b.created_at,
             }
             for b in bots

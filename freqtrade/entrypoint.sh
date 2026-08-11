@@ -32,4 +32,17 @@ else
     exit 1
 fi
 
+# Heartbeat em background: avisa o hub a cada 60s que o bot está vivo
+heartbeat() {
+    while true; do
+        sleep 60
+        curl -sf \
+            -X POST \
+            -H "X-Internal-Key: ${INTERNAL_KEY}" \
+            "${HUB_URL}/internal/heartbeat/${BOT_NAME}" \
+            >/dev/null 2>&1 || true
+    done
+}
+heartbeat &
+
 exec freqtrade "$@"
