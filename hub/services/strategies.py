@@ -1,4 +1,4 @@
-﻿"""
+"""
 Gerencia estratÃ©gias: PostgreSQL como fonte de verdade,
 volume compartilhado como destino para o Freqtrade ler.
 """

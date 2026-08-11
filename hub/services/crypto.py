@@ -1,4 +1,4 @@
-﻿import base64
+import base64
 import json
 import os
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
