@@ -12,6 +12,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - ACCESS_KEY=${ACCESS_KEY}
+      - INTERNAL_KEY=${INTERNAL_KEY}
       - STRATEGIES_VOLUME_PATH=/strategies
       - STRATEGIES_SEED_PATH=/app/strategies
     volumes:
@@ -39,6 +40,7 @@ services:
     environment:
       - HUB_URL=http://hub:3000
       - BOT_NAME=supertrend
+      - INTERNAL_KEY=${INTERNAL_KEY}
     volumes:
       - strategies_vol:/freqtrade/user_data/strategies:ro
       - freqtrade_logs:/freqtrade/user_data/logs
@@ -69,6 +71,7 @@ services:
     environment:
       - HUB_URL=http://hub:3000
       - BOT_NAME=dualmacd
+      - INTERNAL_KEY=${INTERNAL_KEY}
     volumes:
       - strategies_vol:/freqtrade/user_data/strategies:ro
       - dualmacd_logs:/freqtrade/user_data/logs

@@ -8,7 +8,7 @@ echo "📡 Buscando config do hub: ${HUB_URL}/internal/config/${BOT_NAME}"
 RETRIES=6
 CONFIG=""
 while [ $RETRIES -gt 0 ]; do
-    CONFIG=$(curl -sf "${HUB_URL}/internal/config/${BOT_NAME}" 2>/dev/null || true)
+    CONFIG=$(curl -sf -H "X-Internal-Key: ${INTERNAL_KEY}" "${HUB_URL}/internal/config/${BOT_NAME}" 2>/dev/null || true)
     if [ -n "$CONFIG" ]; then
         break
     fi
