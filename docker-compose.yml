@@ -3,8 +3,8 @@ services:
 
   hub:
     build:
-      context: ./hub
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: hub/Dockerfile
     image: janostrader-hub:latest
     container_name: janostrader-hub
     restart: unless-stopped
