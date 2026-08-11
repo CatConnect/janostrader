@@ -38,7 +38,7 @@ config = {
         "pair_blacklist": []
     },
     "pairlists": [{"method": "StaticPairList"}],
-    "telegram": {"enabled": False},
+    "telegram": {"enabled": False, "token": "0", "chat_id": "0"},
     "api_server": {"enabled": False},
     "db_url": os.environ["DATABASE_URL"],
     "bot_name": BOT_NAME,
