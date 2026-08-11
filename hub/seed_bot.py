@@ -52,7 +52,14 @@ config = {
             "protection_trigger": "on", "protection_trigger_global": "on"
         }
     },
-    "api_server": {"enabled": False},
+    "api_server": {
+        "enabled": False,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "username": "freqtrade",
+        "password": "freqtrade",
+        "jwt_secret_key": "somethingRandomSomethingRandom123"
+    },
     "db_url": os.environ["DATABASE_URL"],
     "bot_name": BOT_NAME,
     "initial_state": "running",
