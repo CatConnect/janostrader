@@ -34,15 +34,15 @@ class FDualMacdStrategy(IStrategy):
     timeframe = "1h"
     startup_candle_count: int = 100
 
-    # ROI similar ao FSupertrendStrategy — deixar o lucro correr
+    # ROI decrescente: exige menos lucro quanto mais tempo passou (padrão Freqtrade)
     minimal_roi = {
-        "0": 0.025,
-        "60": 0.05,
-        "120": 0.075,
-        "240": 0.10,
+        "0": 0.10,
+        "60": 0.075,
+        "120": 0.05,
+        "240": 0.025,
     }
 
-    stoploss = -0.265
+    stoploss = -0.15
     trailing_stop = True
     trailing_stop_positive = 0.05
     trailing_stop_positive_offset = 0.10
